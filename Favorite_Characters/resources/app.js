@@ -1,55 +1,50 @@
 var express = require("express");
 var path = require("path");
 var bodyParser = require("body-parser");
-var fs = require("fs");
+var mysql = require("mysql");
+
 
 var app = express();
 
+app.set("views", "resources/Files/views");
+app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "Files")));
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.get("/", (req, resp) => {
-  resp.sendFile("index.html", { root: path.join(__dirname, "./Files") });
+//Connection phase
+var connection = mysql.createConnection({
+  host: "mysql-db",
+  user: "root",
+  password: "rootroot",
+  database: "Pr-inpt",
 });
 
-app.post("/", function (req, res) {
-  // Donnée envoyée par le client
-  let recievedData = req.body;
+connection.connect((err) => {
+  if (err) throw err;
+  else {
+    console.log("Connected to DB succusfully!!");
+  }
+});
 
-  // On récupère les données deja existantes dans le JSON
-  let jsonData = require("./Files/characters.json");
+app.get("/", (req, res) => {
+  connection.query("SELECT * FROM personnage", (err, result) => {
+    if (err) throw err;
+    else { res.render('index',{result : result})}
+  });
 
-  // On ajoute les nouvelles données dans le tableau du JSON
-  jsonData.push(recievedData);
+});
 
-  fs.open(
-    path.resolve(__dirname, "Files", "characters.json"),
-    "w+",
-    (err, fileDescriptor) => {
-      if (!err & fileDescriptor) {
-        fs.writeFile(fileDescriptor, JSON.stringify(jsonData), (err) => {
-          if (!err) {
-            fs.close(fileDescriptor, (err) => {
-              if (!err) { 
-                res.sendFile("index.html", { root: path.join(__dirname, "./Files") });
-                return;
-              } else {
-                res.status(500).send("Server Error");
-                throw err;
-              }
-            });
-          } else {
-            res.status(500).send("Server Error");
-
-            throw err;
-          }
-        });
-      } else {
-        res.status(500).send("Server Error");
-        throw err;
-      }
-    }
+app.post("/", (req, res) => {
+  let recievedData = {
+    name: req.body.name,
+    characteristics: req.body.characteristics,
+    photo: req.body.photo,
+  };
+  connection.query(
+    `INSERT INTO personnage(name,photo,characteristics) VALUES ('${recievedData.name}','${recievedData.photo}','${recievedData.characteristics}')`
   );
+  res.redirect('/');
+
 });
 
 var port = process.env.PORT || 3000;
