@@ -1,0 +1,46 @@
+version: "3.2"
+services:
+  nodejs:
+    build: 
+      context: .
+    image: node-image
+    networks:
+      - frontend
+      - backend
+    environment:
+      - MYSQL_HOST=mysql-db
+      - MYSQL_USER=root
+      - MYSQL_PASS=
+      - MYSQL_DB=Pr-inpt
+    volumes:
+      - ./public/images:/public/images
+    ports:
+      - "3010:3000"
+    container_name: nodejs-app
+  mysql:
+    image: mysql:5.7
+    networks:
+      - backend
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootroot
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=
+      - MYSQL_DATABASE=Pr-inpt
+    container_name: mysql-db
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:4.7
+    depends_on:
+      - mysql
+    networks:
+      - backend
+    ports:
+      - "3020:80"
+    environment:
+      - PMA_HOST=mysql-db
+      - PMA_PORT= 3306
+    volumes:
+      - /sessions
+    container_name: phpmyadmin-app
+networks:
+  frontend:
+  backend:
